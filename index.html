@@ -1,0 +1,72 @@
+<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><title>SULTAN CYBER RACING - SOUND + MAST CAR</title><style>*{margin:0;padding:0;box-sizing:border-box}body,html{width:100%;height:100%;overflow:hidden;background:#030308;color:#fff;font-family:Arial}#g{position:relative;width:100vw;height:100vh}canvas{width:100%;height:100%;display:block}.hud{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;z-index:10}.card{background:rgba(10,15,30,.85);border:1px solid #00f0ff;padding:8px 14px;border-radius:8px;text-align:center;backdrop-filter:blur(4px)}.v{font-size:18px;color:#00f0ff;font-weight:bold}.t{font-size:10px;color:#ff007f}.ov{position:absolute;inset:0;background:rgba(5,5,15,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:20;text-align:center;padding:20px}h1{font-size:34px;color:#00f0ff;text-shadow:0 0 15px #00f0ff,0 0 30px #ff007f}.btn{background:linear-gradient(45deg,#ff007f,#00f0ff);border:none;color:#fff;padding:14px 36px;border-radius:30px;font-weight:bold;margin-top:14px;cursor:pointer;box-shadow:0 0 15px rgba(0,240,255,.6)}.touch{position:absolute;bottom:14px;left:0;width:100%;display:flex;justify-content:space-between;padding:0 16px;z-index:10}.tb{width:72px;height:72px;background:rgba(0,240,255,.28);border:2px solid #00f0ff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;backdrop-filter:blur(4px)}.hidden{display:none!important}#soundBtn{position:absolute;top:12px;right:12px;z-index:30;background:rgba(0,0,0,.6);border:1px solid #00f0ff;color:#00f0ff;padding:6px 12px;border-radius:20px;font-size:12px;cursor:pointer}</style></head><body><div id="g"><canvas id="c"></canvas><button id="soundBtn" onclick="toggleSound()">🔊 SOUND ON</button><div class="hud"><div class="card"><div class="t">Score</div><div id="sc" class="v">0</div></div><div class="card"><div class="t">Coins</div><div id="co" class="v" style="color:#ffd700">0</div></div><div class="card"><div class="t">Speed</div><div id="sp" class="v">0</div></div></div><div id="start" class="ov"><h1>👑 SULTAN<br>CYBER RACING 2077</h1><p style="color:#aaa;margin:12px 0;font-size:13px">🔊 Sound + 🏎️ Mast Car + 💨 Drift Fire<br>Engine vroom + Coin ding + Crash boom!</p><button class="btn" onclick="startGame()">🚀 START RACE</button><p style="font-size:11px;margin-top:12px;opacity:.7">🔊 Sound ke liye button dabao - Car SULTAN 53</p></div><div id="over" class="ov hidden"><h1>SYSTEM CRASH</h1><p>Score: <span id="fs">0</span> | Coins: <span id="fc">0</span> | Drift: <span id="fd">0</span></p><button class="btn" onclick="startGame()">🔄 RETRY</button></div><div class="touch"><div class="tb" id="lb">◄</div><div class="tb" id="rb">►</div></div></div><script>
+const canvas=document.getElementById('c'),ctx=canvas.getContext('2d');function rs(){canvas.width=innerWidth;canvas.height=innerHeight}rs();addEventListener('resize',rs);
+// SOUND SYSTEM
+let audioCtx=null,soundOn=true,engineOsc=null,engineGain=null;
+function initAudio(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();}
+function playSound(type){
+if(!soundOn)return;initAudio();
+const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);
+if(type==='coin'){o.type='sine';o.frequency.setValueAtTime(800,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(1400,audioCtx.currentTime+0.15);g.gain.setValueAtTime(0.4,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.2);o.start();o.stop(audioCtx.currentTime+0.2);}
+else if(type==='crash'){o.type='sawtooth';o.frequency.setValueAtTime(150,audioCtx.currentTime);o.frequency.exponentialRampToValueAtTime(20,audioCtx.currentTime+0.6);g.gain.setValueAtTime(0.6,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0.01,audioCtx.currentTime+0.6);o.start();o.stop(audioCtx.currentTime+0.6);}
+else if(type==='drift'){o.type='sawtooth';o.frequency.setValueAtTime(120,audioCtx.currentTime);o.frequency.linearRampToValueAtTime(200,audioCtx.currentTime+0.2);g.gain.setValueAtTime(0.25,audioCtx.currentTime);g.gain.linearRampToValueAtTime(0,audioCtx.currentTime+0.25);o.start();o.stop(audioCtx.currentTime+0.25);}
+}
+function startEngineSound(){if(!soundOn)return;initAudio();if(engineOsc)return;engineOsc=audioCtx.createOscillator();engineGain=audioCtx.createGain();engineOsc.type='sawtooth';engineOsc.frequency.value=60;engineGain.gain.value=0.08;engineOsc.connect(engineGain);engineGain.connect(audioCtx.destination);engineOsc.start();}
+function updateEngineSound(spd){if(engineOsc&&soundOn){engineOsc.frequency.value=60+spd*0.8;engineGain.gain.value=0.05+spd*0.002;}}
+function stopEngineSound(){if(engineOsc){try{engineOsc.stop()}catch(e){}engineOsc=null;engineGain=null;}}
+function toggleSound(){soundOn=!soundOn;document.getElementById('soundBtn').innerText=soundOn?'🔊 SOUND ON':'🔇 SOUND OFF';if(soundOn){initAudio();if(state==='play')startEngineSound();}else stopEngineSound();}
+let state='start',score=0,coins=0,drift=0,driftT=0,speed=0,dist=0,shield=0;const player={x:0,tx:0};const keys={l:false,r:false};
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')keys.l=true;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.r=true;});
+addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='a'||e.key==='A')keys.l=false;if(e.key==='ArrowRight'||e.key==='d'||e.key==='D')keys.r=false;});
+function b(id,k){let el=document.getElementById(id);el.addEventListener('touchstart',e=>{e.preventDefault();keys[k]=true},{passive:false});el.addEventListener('touchend',e=>{e.preventDefault();keys[k]=false},{passive:false});}b('lb','l');b('rb','r');
+let obs=[],coinArr=[],smokes=[],flames=[],trees=[],bridge=-400;for(let i=0;i<24;i++)trees.push({x:Math.random()<0.5?Math.random()*0.3:0.7+Math.random()*0.3,y:Math.random()*800,s:0.5+Math.random()*0.8});
+let last=0,carSpd=0,road=0;
+function init(){score=0;coins=0;drift=0;driftT=0;speed=14;dist=0;player.x=0;player.tx=0;obs=[];coinArr=[];smokes=[];flames=[];road=0;bridge=-400;shield=0}
+function loop(t){let dt=(t-last)/1000;if(isNaN(dt))dt=0.016;last=t;update(dt);render();requestAnimationFrame(loop)}
+function update(dt){if(state!=='play')return;if(keys.l)player.tx-=2.4*dt;if(keys.r)player.tx+=2.4*dt;player.tx=Math.max(-0.85,Math.min(0.85,player.tx));let d=player.tx-player.x;carSpd+=d*9*dt;carSpd*=0.86;player.x+=carSpd;
+let turn=Math.abs(carSpd);let isDr=turn>0.065&&(keys.l||keys.r)&&speed>18;if(isDr){driftT++;if(driftT%3==0){smokes.push({x:player.x-0.13,z:28,vx:-0.05-Math.random()*0.04,l:20,s:0.05});smokes.push({x:player.x+0.13,z:28,vx:0.05+Math.random()*0.04,l:20,s:0.05});flames.push({x:player.x-0.08,z:22,l:8});flames.push({x:player.x+0.08,z:22,l:8});if(driftT%18==0)playSound('drift');}if(driftT%60==0){drift++;score+=80}}else driftT=0;
+if(shield>0)shield--;speed+=dt*0.7;dist+=speed;score=Math.floor(dist/10)+coins*120+drift*80;updateEngineSound(speed);
+document.getElementById('sc').innerText=score;document.getElementById('co').innerText=coins;document.getElementById('sp').innerText=Math.floor(speed*12)+' KM/H';
+road+=speed*0.9;bridge+=speed*0.9;if(bridge>1200)bridge=-600;
+if(Math.random()<0.055&&(obs.length==0||obs[obs.length-1].z<650))obs.push({x:(Math.random()*2-1)*0.8,z:1000,c:Math.random()>0.5?'#ff007f':'#00f0ff'});
+if(Math.random()<0.045)coinArr.push({x:(Math.random()*2-1)*0.7,z:1000});
+for(let i=obs.length-1;i>=0;i--){let o=obs[i];o.z-=speed*40*dt;if(o.z<62&&o.z>0&&Math.abs(o.x-player.x)<0.26){if(shield>0){obs.splice(i,1)}else{playSound('crash');stopEngineSound();state='over';document.getElementById('fs').innerText=score;document.getElementById('fc').innerText=coins;document.getElementById('fd').innerText=drift;document.getElementById('over').classList.remove('hidden');}}if(o.z<=0)obs.splice(i,1);}
+for(let i=coinArr.length-1;i>=0;i--){let c=coinArr[i];c.z-=speed*40*dt;if(c.z<62&&c.z>0&&Math.abs(c.x-player.x)<0.23){coinArr.splice(i,1);coins++;playSound('coin');if(Math.random()<0.15)shield=350}if(c.z<=0)coinArr.splice(i,1);}
+smokes.forEach(s=>{s.z-=speed*32*dt;s.x+=s.vx;s.l--});smokes=smokes.filter(s=>s.l>0);flames.forEach(f=>{f.z-=speed*32*dt;f.l--});flames=flames.filter(f=>f.l>0);
+trees.forEach(t=>{t.y+=speed*2.2;if(t.y>900){t.y=-100;t.x=Math.random()<0.5?Math.random()*0.3:0.7+Math.random()*0.3}})}
+function drawMastCar(px,py,isDr){
+ctx.save();ctx.translate(px,py);
+// shadow
+ctx.fillStyle='rgba(0,0,0,0.4)';ctx.beginPath();ctx.ellipse(0,42,36,10,0,0,Math.PI*2);ctx.fill();
+// car base - lower body
+ctx.shadowColor='#00f0ff';ctx.shadowBlur=18;
+ctx.fillStyle='#0a1a2a';ctx.beginPath();ctx.moveTo(-34,10);ctx.lineTo(-36,38);ctx.lineTo(36,38);ctx.lineTo(34,10);ctx.closePath();ctx.fill();
+// upper body - gradient
+let grad=ctx.createLinearGradient(-30,0,30,0);grad.addColorStop(0,'#00d4ff');grad.addColorStop(0.5,'#00f0ff');grad.addColorStop(1,'#0080ff');
+ctx.fillStyle=grad;ctx.beginPath();ctx.moveTo(-28,10);ctx.lineTo(-30,-8);ctx.lineTo(30,-8);ctx.lineTo(28,10);ctx.closePath();ctx.fill();
+// cockpit - neon pink
+ctx.fillStyle='#1a0033';ctx.beginPath();ctx.moveTo(-18,-8);ctx.lineTo(-14,-22);ctx.lineTo(14,-22);ctx.lineTo(18,-8);ctx.closePath();ctx.fill();
+ctx.fillStyle='#ff007f';ctx.shadowColor='#ff007f';ctx.shadowBlur=10;ctx.beginPath();ctx.moveTo(-12,-10);ctx.lineTo(-10,-20);ctx.lineTo(10,-20);ctx.lineTo(12,-10);ctx.closePath();ctx.fill();
+// headlights
+ctx.shadowBlur=12;ctx.shadowColor='#ffffff';ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(-22,12,4,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(22,12,4,0,Math.PI*2);ctx.fill();
+// tail lights
+ctx.shadowColor='#ff0000';ctx.shadowBlur=14;ctx.fillStyle='#ff0033';ctx.fillRect(-28,32,10,6);ctx.fillRect(18,32,10,6);
+// SULTAN 53 plate
+ctx.shadowBlur=0;ctx.fillStyle='#ffd700';ctx.fillRect(-20,2,40,10);ctx.fillStyle='#000';ctx.font='bold 8px Arial';ctx.textAlign='center';ctx.fillText('SULTAN 53',0,9);
+// side stripes gold
+ctx.fillStyle='#ffab00';ctx.fillRect(-32,14,4,16);ctx.fillRect(28,14,4,16);
+// spoiler
+ctx.fillStyle='#003366';ctx.fillRect(-26,-22,52,5);
+ctx.restore();
+}
+function render(){ctx.clearRect(0,0,canvas.width,canvas.height);const cx=canvas.width/2,h=canvas.height*0.46;let g=ctx.createLinearGradient(0,0,0,h);g.addColorStop(0,'#03030f');g.addColorStop(1,'#1a0033');ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,h);let sg=ctx.createRadialGradient(cx,h-20,10,cx,h-20,90);sg.addColorStop(0,'#ffff00');sg.addColorStop(0.5,'#ff007f');sg.addColorStop(1,'transparent');ctx.fillStyle=sg;ctx.beginPath();ctx.arc(cx,h-20,90,0,Math.PI*2);ctx.fill();let gg=ctx.createLinearGradient(0,h,0,canvas.height);gg.addColorStop(0,'#0a001a');gg.addColorStop(1,'#020005');ctx.fillStyle=gg;ctx.fillRect(0,h,canvas.width,canvas.height-h);
+const rt=40,rb=canvas.width*0.92;ctx.fillStyle='#0d001a';ctx.beginPath();ctx.moveTo(cx-rt/2,h);ctx.lineTo(cx+rt/2,h);ctx.lineTo(cx+rb/2,canvas.height);ctx.lineTo(cx-rb/2,canvas.height);ctx.closePath();ctx.fill();ctx.strokeStyle='#00f0ff';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(cx-rt/2,h);ctx.lineTo(cx-rb/2,canvas.height);ctx.moveTo(cx+rt/2,h);ctx.lineTo(cx+rb/2,canvas.height);ctx.stroke();let off=(dist%50)/50;for(let i=0;i<15;i++){let p=(i+off)/15;p=Math.pow(p,2);let y=h+p*(canvas.height-h);let w=rt+p*(rb-rt);ctx.strokeStyle=`rgba(0,240,255,${p*0.6})`;ctx.beginPath();ctx.moveTo(cx-w/2,y);ctx.lineTo(cx+w/2,y);ctx.stroke();}
+if(bridge>100&&bridge<700){let p=1-bridge/1000;p=Math.pow(p,2.2);let y=h+p*(canvas.height-h);let w=rt+p*(rb-rt);ctx.fillStyle='#222';ctx.fillRect(cx-w/2-14,y,w+28,16);ctx.fillStyle='#00f0ff';ctx.fillRect(cx-w/2-14,y-5,w+28,5);ctx.fillStyle='#ff007f';ctx.fillRect(cx-w/2-14,y+14,w+28,3);}
+trees.forEach(t=>{let p=t.y/900;if(p<0||p>1)return;p=Math.pow(p,2);let y=h+p*(canvas.height-h);let x=t.x*canvas.width;let s=t.s*(9+p*24);ctx.fillStyle='#3e2723';ctx.fillRect(x-2,y-s*0.6,4,s*0.6);ctx.fillStyle='#0a4a0a';ctx.beginPath();ctx.arc(x,y-s*0.7,s*0.42,0,Math.PI*2);ctx.fill();});
+obs.forEach(o=>{let p=1-(o.z/1000);if(p>0&&p<1){let pp=Math.pow(p,2.5);let y=h+pp*(canvas.height-h);let rw=rt+pp*(rb-rt);let x=cx+o.x*(rw/2);let sz=12+pp*62;ctx.fillStyle=o.c;ctx.shadowColor=o.c;ctx.shadowBlur=14;ctx.fillRect(x-sz/2,y-sz,sz,sz);ctx.shadowBlur=0}});
+coinArr.forEach(c=>{let p=1-(c.z/1000);if(p>0&&p<1){let pp=Math.pow(p,2.5);let y=h+pp*(canvas.height-h);let rw=rt+pp*(rb-rt);let x=cx+c.x*(rw/2);let sz=10+pp*24;ctx.fillStyle='#ff8f00';ctx.beginPath();ctx.arc(x,y-sz/2,sz/2,0,Math.PI*2);ctx.fill();ctx.fillStyle='#ffd700';ctx.beginPath();ctx.arc(x,y-sz/2,sz/2*0.65,0,Math.PI*2);ctx.fill();ctx.fillStyle='#000';ctx.font=`bold ${sz*0.5}px Arial`;ctx.textAlign='center';ctx.fillText('$',x,y-sz/2+2);}});
+smokes.forEach(s=>{let p=1-(s.z/1000);if(p>0&&p<1){let pp=Math.pow(p,2.5);let y=h+pp*(canvas.height-h);let rw=rt+pp*(rb-rt);let x=cx+s.x*(rw/2);ctx.fillStyle=`rgba(210,210,210,${s.l/20*0.5})`;ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.fill();}});
+flames.forEach(f=>{let p=1-(f.z/1000);if(p>0&&p<1){let pp=Math.pow(p,2.5);let y=h+pp*(canvas.height-h);let rw=rt+pp*(rb-rt);let x=cx+f.x*(rw/2);ctx.fillStyle=`rgba(255,${100+Math.random()*100},0,${f.l/8})`;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-6,y+14+Math.random()*8);ctx.lineTo(x+6,y+14+Math.random()*8);ctx.closePath();ctx.fill();}});
+if(state==='play'){let px=cx+player.x*(rb/2.3),py=canvas.height-98;if(shield>0){ctx.strokeStyle='#00e5ff';ctx.lineWidth=3;ctx.globalAlpha=0.7+Math.sin(Date.now()*0.02)*0.3;ctx.beginPath();ctx.ellipse(px,py+18,46,32,0,0,Math.PI*2);ctx.stroke();ctx.globalAlpha=1}drawMastCar(px,py,driftT>0);}}
+function startGame(){initAudio();init();state='play';document.getElementById('start').classList.add('hidden');document.getElementById('over').classList.add('hidden');if(soundOn)startEngineSound();}
+window.startGame=startGame;requestAnimationFrame(loop);
+</script></body></html>
